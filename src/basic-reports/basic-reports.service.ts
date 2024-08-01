@@ -1,7 +1,16 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrinterService } from 'src/printer/printer.service';
-import { getHelloWorldReport } from 'src/reports';
+import {
+  getEmploymentLetterByIdReport,
+  getEmploymentLetterReport,
+  getHelloWorldReport,
+} from 'src/reports';
 
 @Injectable()
 export class BasicReportsService extends PrismaClient implements OnModuleInit {
@@ -19,6 +28,39 @@ export class BasicReportsService extends PrismaClient implements OnModuleInit {
   hello() {
     const docDefinition = getHelloWorldReport({ name: 'Angel Chavez' });
     const doc = this.printerService.createPdf(docDefinition);
+    return doc;
+  }
+
+  employmentLetter() {
+    const docDefinition = getEmploymentLetterReport();
+    const doc = this.printerService.createPdf(docDefinition);
+    return doc;
+  }
+
+  async employmentLetterById(employeeId: number) {
+    const employee = await this.employees.findUnique({
+      where: {
+        id: employeeId,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with id ${employeeId} not found`);
+    }
+
+    const docDefinition = getEmploymentLetterByIdReport({
+      employerName: 'Angel Chavez',
+      employerPosition: 'Gerente de RRHH',
+      employeeName: employee.name,
+      employeePosition: employee.position,
+      employeeStartDate: employee.start_date,
+      employeeHours: employee.hours_per_day,
+      employeeWorkSchedule: employee.work_schedule,
+      employerCompany: 'Tucan Code Corp.',
+    });
+
+    const doc = this.printerService.createPdf(docDefinition);
+
     return doc;
   }
 }
